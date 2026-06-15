@@ -2,10 +2,28 @@ import asyncio
 import sys
 import time
 import hashlib
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
 from termcolor import colored
 
+# --- SILENT WEB SERVER CORE FOR RENDER COMPATIBILITY ---
+class SilentServerHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write(b"R4D1N PRO CLOUD ENGINE IS RUNNING LIVE.")
+    def log_message(self, format, *args):
+        return  # Suppresses web traffic clutter in your signal log layout
+
+def run_web_port_server():
+    # Render automatically passes the port number on variable 10000
+    server_address = ('0.0.0.0', 10000)
+    httpd = HTTPServer(server_address, SilentServerHandler)
+    httpd.serve_forever()
+
+# --- ORIGINAL MASTER TRADING BOT PROTOCOL ---
 def print_r4d1n_logo():
-    """Renders the custom R4D1N branding header at cloud boot."""
     logo_text = """
 ██████╗ ██╗  ██╗██████╗  ██╗███╗   ██╗    ██████╗ ██████╗  ██████╗ 
 ██╔══██╗██║  ██║██╔══██╗███║████╗  ██║    ██╔══██╗██╔══██╗██╔═══██╗
@@ -20,7 +38,6 @@ def print_r4d1n_logo():
     print("="*65)
 
 def calculate_otc_cryptographic_trend(asset_name, current_minute):
-    """Cryptographic Vector Oscillator balanced specifically for cloud streams."""
     seed_string = f"{asset_name.upper()}_{current_minute}_R4D1N_CLOUD_CORE"
     hash_digest = hashlib.md5(seed_string.encode('utf-8')).hexdigest()
     vector_score = int(hash_digest[:4], 16) % 100
@@ -59,5 +76,9 @@ async def run_sureshot_loop(asset):
         await asyncio.sleep(10)
 
 if __name__ == "__main__":
+    # Fire up the fake web server block on a background channel thread
+    web_thread = threading.Thread(target=run_web_port_server, daemon=True)
+    web_thread.start()
+    
     TARGET_PAIR = "USDBRL_OTC" 
     asyncio.run(run_sureshot_loop(TARGET_PAIR))
