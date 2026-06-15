@@ -1,84 +1,67 @@
 import asyncio
 import sys
-import time
-import hashlib
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import threading
+from playwright.async_api import async_playwright
 from termcolor import colored
 
-# --- SILENT WEB SERVER CORE FOR RENDER COMPATIBILITY ---
-class SilentServerHandler(BaseHTTPRequestHandler):
+# --- SILENT WEB SERVER TO KEEP RENDER HAPPY ---
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+class SilentHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        self.wfile.write(b"R4D1N PRO CLOUD ENGINE IS RUNNING LIVE.")
-    def log_message(self, format, *args):
-        return  # Suppresses web traffic clutter in your signal log layout
+        self.wfile.write(b"LIVE DATA ENGINE RUNNING")
+    def log_message(self, format, *args): return
 
-def run_web_port_server():
-    # Render automatically passes the port number on variable 10000
-    server_address = ('0.0.0.0', 10000)
-    httpd = HTTPServer(server_address, SilentServerHandler)
+def run_web_server():
+    httpd = HTTPServer(('0.0.0.0', 10000), SilentHandler)
     httpd.serve_forever()
 
-# --- ORIGINAL MASTER TRADING BOT PROTOCOL ---
-def print_r4d1n_logo():
-    logo_text = """
-██████╗ ██╗  ██╗██████╗  ██╗███╗   ██╗    ██████╗ ██████╗  ██████╗ 
-██╔══██╗██║  ██║██╔══██╗███║████╗  ██║    ██╔══██╗██╔══██╗██╔═══██╗
-██████╔╝███████║██║  ██║╚██║██╔██╗ ██║    ██████╔╝██████╔╝██║   ██║
-██╔══██╗╚════██║██║  ██║ ██║██║╚██╗██║    ██╔═══╝ ██╔══██╗██║   ██║
-██║  ██║     ██║██████╔╝ ██║██║ ╚████║    ██║     ██║  ██║╚██████╔╝
-╚═╝  ╚═╝     ╚═╝╚═════╝  ╚═╝╚═╝  ╚═══╝    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ 
-    """
-    print(colored(logo_text, "cyan", attrs=["bold"]))
-    print("="*65)
-    print("       R4D1N PRO - CLOUD STREAM ENGINE MASTER")
-    print("="*65)
-
-def calculate_otc_cryptographic_trend(asset_name, current_minute):
-    seed_string = f"{asset_name.upper()}_{current_minute}_R4D1N_CLOUD_CORE"
-    hash_digest = hashlib.md5(seed_string.encode('utf-8')).hexdigest()
-    vector_score = int(hash_digest[:4], 16) % 100
-    return vector_score
-
-async def run_sureshot_loop(asset):
-    print_r4d1n_logo()
-    print(f"[📡 ENGINE ONLINE] Tracking live cloud vectors for target pair: {asset.upper()}\n")
+# --- LIVE QUOTEX DATA FEED AGENT ---
+async def get_live_market_stream(asset_url):
+    print(colored("\n[🚀 FEED STARTING] Launching live web cloud connection...", "cyan"))
     
-    while True:
-        current_sec = time.localtime().tm_sec
-        while current_sec < 55:
-            await asyncio.sleep(1)
-            current_sec = time.localtime().tm_sec
+    async with async_playwright() as p:
+        # Launch a headless cloud browser profile
+        browser = await p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+        page = await browser.new_page()
+        
+        print(colored(f"[📡 CONNECTING] Loading Quotex Asset Chart: {asset_url}", "yellow"))
+        try:
+            # Open the public chart asset room directly
+            await page.goto(asset_url, timeout=60000)
+            await page.wait_for_timeout(5000) # Let animations resolve
+            print(colored("[✅ CONNECTED] Live chart pipeline successfully linked!\n", "green"))
             
-        target_execution_minute = (time.localtime().tm_min + 1) % 60
-        algo_score = calculate_otc_cryptographic_trend(asset, target_execution_minute)
-        
-        if algo_score >= 50:
-            direction = "CALL"
-        else:
-            direction = "PUT"
+            print("="*65)
+            print("       R4D1N PRO - LIVE CHART VECTOR DEPLOYMENT")
+            print("="*65)
 
-        next_minute = (time.localtime().tm_min + 1) % 60
-        entry_time_str = f"{time.strftime('%H')}:{next_minute:02d}:00"
-        
-        print("#"*65)
-        print(f" ⚡ INITIAL SURESHOT ENTRY -> TARGET ASSET: {asset.upper()}")
-        print(f" ENTRY TIME   : {entry_time_str} (On Next Candle Opening)")
-        if direction == "CALL":
-            print(" TARGET TRADE : 🟢🟢🟢 CALL (UP) 🟢🟢🟢")
-        else:
-            print(" TARGET TRADE : 🔴🔴🔴 PUT (DOWN) 🔴🔴🔴")
-        print("#"*65 + "\n")
+            while True:
+                # Target the live price text block inside the Quotex canvas wrapper
+                # Note: The class selector changes depending on the asset room layout
+                price_element = await page.query_selector(".current-price, .chart-price-value")
+                
+                if price_element:
+                    live_price_text = await price_element.inner_text()
+                    print(colored(f"[📊 LIVE TICK DATA] Price Value: {live_price_text}", "white"))
+                else:
+                    print(colored("[⚠️ FEED DELAY] Scanning chart DOM structure for price elements...", "red"))
+                
+                # Check the price every 1 second continuously
+                await asyncio.sleep(1)
 
-        await asyncio.sleep(10)
+        except Exception as e:
+            print(colored(f"[❌ FEED ERROR] Connection dropped: {e}", "red"))
+        finally:
+            await browser.close()
 
 if __name__ == "__main__":
-    # Fire up the fake web server block on a background channel thread
-    web_thread = threading.Thread(target=run_web_port_server, daemon=True)
-    web_thread.start()
+    # Start background port handler
+    threading.Thread(target=run_web_server, daemon=True).start()
     
-    TARGET_PAIR = "USDBRL_OTC" 
-    asyncio.run(run_sureshot_loop(TARGET_PAIR))
+    # Enter the direct asset trade room link you want the bot to watch live
+    TARGET_ROOM_URL = "https://quotex.com/en/demo-trade" 
+    
+    asyncio.run(get_live_market_stream(TARGET_ROOM_URL))
